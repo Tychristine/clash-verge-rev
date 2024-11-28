@@ -94,7 +94,7 @@ jobs:
 
       - name: Portable Bundle
         if: matrix.os == 'windows-latest'
-        run: pnpm portable ${{ matrix.target }} --alpha
+        run: pnpm portable
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -2,25 +2,24 @@ import fs from "fs";
 import path from "path";
 import AdmZip from "adm-zip";
 import { createRequire } from "module";
-import { getOctokit, context } from "@actions/github";
+import fsp from "fs/promises";
+import { context, getOctokit } from "@actions/github";
 
 const target = process.argv.slice(2)[0];
 const alpha = process.argv.slice(2)[1];
 
 const ARCH_MAP = {
   "x86_64-pc-windows-msvc": "x64",
-  "i686-pc-windows-msvc": "x86",
   "aarch64-pc-windows-msvc": "arm64",
 };
 
 const PROCESS_MAP = {
   x64: "x64",
-  ia32: "x86",
   arm64: "arm64",
 };
 const arch = target ? ARCH_MAP[target] : PROCESS_MAP[process.arch];
 /// Script for ci
-/// 打包绿色版/便携版 (only Windows)
+/// For Scoop Package Manager
 async function resolvePortable() {
   if (process.platform !== "win32") return;
 
@@ -40,7 +39,7 @@ async function resolvePortable() {
 
   const zip = new AdmZip();
 
-  zip.addLocalFile(path.join(releaseDir, "Clash Verge.exe"));
+  zip.addLocalFile(path.join(releaseDir, "clash-verge.exe"));
   zip.addLocalFile(path.join(releaseDir, "verge-mihomo.exe"));
   zip.addLocalFile(path.join(releaseDir, "verge-mihomo-alpha.exe"));
   zip.addLocalFolder(path.join(releaseDir, "resources"), "resources");
@@ -50,7 +49,7 @@ async function resolvePortable() {
   const packageJson = require("../package.json");
   const { version } = packageJson;
 
-  const zipFile = `Clash.Verge_${version}_${arch}_portable.zip`;
+  const zipFile = `Clash.Verge_${version}_${arch}_scoop.zip`;
   zip.writeZip(zipFile);
 
   console.log("[INFO]: create portable zip successfully");
