@@ -272,9 +272,11 @@ jobs:
           tauriScript: pnpm
           args: --target ${{ matrix.target }}
 
-      # - name: Package
-      #   id: package
-      #   run: pnpm portable
+      - name: Package
+        id: package
+        run: pnpm portable
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # # - name: Rename
       #   # run: |
       #   #   Rename-Item '.\src-tauri\target\${{ matrix.target }}\release\bundle\nsis\Clash Verge_${{steps.build.outputs.appVersion}}_${{ matrix.arch }}-setup.exe' 'Clash Verge_${{steps.build.outputs.appVersion}}_${{ matrix.arch }}_fixed_webview2-setup.exe'
