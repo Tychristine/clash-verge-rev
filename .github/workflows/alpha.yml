@@ -289,7 +289,7 @@ jobs:
           body: "More new features are now supported."
           prerelease: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup*
+          files: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup* Clash.*
 
       - name: Portable Bundle
         run: pnpm portable
