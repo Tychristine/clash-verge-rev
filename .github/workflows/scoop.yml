@@ -1,0 +1,96 @@
+name: Scoop Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [scoop]
+    tags-ignore: [updater, alpha]
+
+permissions: write-all
+env:
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+
+    runs-on: ${{matrix.os}}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Rust Target
+        run: rustup target add x86_64-pc-windows-msvc
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          cache-all-crates: true
+          cache-on-failure: true
+      - name: Intsall Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      - name: pnpm install and check
+        run: |
+          pnpm install
+          pnpm run check
+      - name: Tauri Build
+        id: build
+        uses: tauri-apps/tauri-action@v0
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        with:
+          tauriScript: pnpm
+          args: --target ${{ matrix.target }}
+
+      - name: Set Env
+        run: |
+          echo "BUILDTIME=$(TZ=Asia/Shanghai date)" >> $GITHUB_ENV
+          shell: bash
+      - run: |
+          cat > release.txt << 'EOF'
+          ## Clash Verge Rev Build for Scoop Package
+          ### install with Scoop
+          ```shell
+          fllow command
+          ```
+          Created at  ${{ env.BUILDTIME }}.
+          EOF
+
+      - name: update
+        uses: richardsimko/update-tag@v1
+        with:
+          tag_name: Alpha
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: alpha
+          name: "Clash Verge Rev Build for Scoop Package"
+          body_path: release.txt
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true
+          files: Clash.Verge*.zip
