@@ -15,6 +15,7 @@
     "updater-fixed-webview2": "node scripts/updater-fixed-webview2.mjs",
     "portable": "node scripts/portable.mjs",
     "portable-fixed-webview2": "node scripts/portable-fixed-webview2.mjs",
+    "scoop": "node scripts/scoop_package.mjs",
     "prepare": "husky"
   },
   "dependencies": {
