@@ -1,0 +1,94 @@
+name: Build Windows x64 Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  TAG_NAME: test-build
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
+  HUSKY: 0
+
+concurrency:
+  group: '${{ github.workflow }} - ${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  build-windows-x64:
+    name: Build Windows amd64 (no WebView)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.95.0'
+          targets: x86_64-pc-windows-msvc
+
+      - name: Add Rust Target
+        run: rustup target add x86_64-pc-windows-msvc
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: 'v1-rust-test'
+          key: 'rust-test-${{ runner.os }}-x86_64-pc-windows-msvc'
+          workspaces: |
+            . -> target
+          cache-all-crates: true
+          cache-workspace-crates: true
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6.0.10
+        with:
+          run_install: false
+
+      - name: Install Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.19.0'
+          cache: 'pnpm'
+
+      - name: Pnpm Cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.pnpm-store
+          key: 'pnpm-test-${{ runner.os }}-x86_64-pc-windows-msvc'
+          restore-keys: |
+            pnpm-test-${{ runner.os }}-x86_64-pc-windows-msvc
+
+      - name: Install dependencies
+        run: pnpm i
+
+      - name: Prebuild (download sidecars/resources)
+        run: pnpm run prebuild x86_64-pc-windows-msvc
+
+      - name: Get Version
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          Write-Output "VERSION=$version" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      - name: Tauri Build (no bundle, no sign)
+        run: pnpm build --no-bundle --no-sign --target x86_64-pc-windows-msvc
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
+
+      - name: Portable Zip
+        run: pnpm run portable x86_64-pc-windows-msvc
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          target_commitish: ${{ github.sha }}
+          name: 'Clash Verge Rev Test Build (Windows x64)'
+          prerelease: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: false
+          files: Clash.Verge_${{ env.VERSION }}_x64_portable.zip
