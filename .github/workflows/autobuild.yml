@@ -220,7 +220,7 @@ jobs:
           releaseDraft: false
           prerelease: true
           tauriScript: pnpm
-          args: --target ${{ matrix.target }}
+          args: --no-sign --target ${{ matrix.target }}
 
       - name: Build WiX v7 MSI
         if: matrix.os == 'windows-latest'
